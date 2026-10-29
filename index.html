@@ -127,6 +127,8 @@ h1{
 .fuss{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:28px;align-items:center}
 .fuss small{color:var(--muted);max-width:420px}
 
+body:not(.admin) .neu-form, body:not(.admin) .fuss, body:not(.admin) .zeile .aktionen{display:none}
+
 /* Partikel & Toast */
 .partikel{position:fixed;width:10px;height:10px;pointer-events:none;z-index:50;image-rendering:pixelated}
 .toast{
@@ -148,7 +150,7 @@ h1{
 <body>
 <main>
   <h1>Scoreboard</h1>
-  <p class="sub">Gib den Minecraft-Namen ein, verteile Punkte, und die Rangliste sortiert sich von selbst.</p>
+  <p class="sub">Wer steht ganz oben? Die Rangliste sortiert sich nach Punkten.</p>
 
   <div class="neu-form">
     <img id="vorschau" class="vorschau" alt="Skin-Vorschau" src="https://mc-heads.net/avatar/MHF_Steve/96">
@@ -157,37 +159,52 @@ h1{
   </div>
 
   <ul id="liste"></ul>
-  <div id="leer" class="leer">Noch niemand auf der Liste. Trag oben den ersten Namen ein.</div>
+  <div id="leer" class="leer">Noch niemand auf der Liste.</div>
 
   <div class="fuss">
-    <small>Die Liste wird in deinem Browser gespeichert. Mit „Liste kopieren“ holst du sie in den Code, damit sie für alle Besucher gilt.</small>
-    <button id="export" class="btn turq klein">Liste kopieren</button>
+    <small>Admin-Modus: Änderungen gelten nur in diesem Browser. Mit „JSON kopieren“ holst du die Liste und fügst sie in die Datei spieler.json auf GitHub ein, dann sehen sie alle.</small>
+    <div class="aktionen"><button id="export" class="btn turq klein">JSON kopieren</button><button id="reset" class="btn geist klein">Zurücksetzen</button></div>
   </div>
 </main>
 <div id="toast" class="toast"></div>
 
 <script>
-/* Fest eingetragene Spieler (für alle Besucher sichtbar), z. B.:
-   const STANDARD_SPIELER = [{name:"Notch", punkte:10},{name:"jeb_", punkte:7}]; */
-const STANDARD_SPIELER = [];
+/* Admin-Modus: Seite mit #admin am Ende der Adresse öffnen. Besucher sehen nur die Liste aus spieler.json. */
+const ADMIN = location.hash === '#admin';
+document.body.classList.toggle('admin', ADMIN);
+addEventListener('hashchange', () => location.reload());
 
 const KEY = 'scoreboard-v1';
-const SKIN = (n, g=96) => 'https://mc-heads.net/avatar/' + encodeURIComponent(n) + '/' + g;
-const STEVE = SKIN('MHF_Steve');
+/* Skin-Quellen der Reihe nach probieren; ganz am Ende Steve */
+const QUELLEN = [
+  n => 'https://mc-heads.net/avatar/' + n + '/96',
+  n => 'https://minotar.net/helm/' + n + '/96',
+  () => 'https://mc-heads.net/avatar/MHF_Steve/96',
+  () => 'https://minotar.net/helm/MHF_Steve/96'
+];
+function skin(img, name){
+  const n = encodeURIComponent(name); let i = 0;
+  img.onerror = () => { i++; if(i < QUELLEN.length) img.src = QUELLEN[i](n); else img.onerror = null; };
+  img.src = QUELLEN[0](n);
+}
 const ruhig = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let spieler = laden();
+let spieler = [];
 const liste = document.getElementById('liste');
 const leer = document.getElementById('leer');
 const eingabe = document.getElementById('eingabe');
 const vorschau = document.getElementById('vorschau');
 const els = new Map();
 
-function laden(){
-  try{ const r = localStorage.getItem(KEY); if(r) return JSON.parse(r); }catch(e){}
-  return STANDARD_SPIELER.map(s => ({...s}));
+async function laden(){
+  if(ADMIN){ try{ const d = localStorage.getItem(KEY); if(d) return JSON.parse(d); }catch(e){} }
+  try{
+    const r = await fetch('spieler.json?t=' + Date.now(), {cache:'no-store'});
+    if(r.ok) return await r.json();
+  }catch(e){}
+  return [];
 }
-function speichern(){ try{ localStorage.setItem(KEY, JSON.stringify(spieler)); }catch(e){} }
+function speichern(){ if(ADMIN){ try{ localStorage.setItem(KEY, JSON.stringify(spieler)); }catch(e){} } }
 
 function toast(text){
   const t = document.getElementById('toast');
@@ -238,8 +255,7 @@ function erstellen(s){
     </div>`;
   li.querySelector('.name').textContent = s.name;
   const img = li.querySelector('.skin');
-  img.src = SKIN(s.name);
-  img.onerror = () => { img.onerror = null; img.src = STEVE; };
+  skin(img, s.name);
   return li;
 }
 
@@ -267,6 +283,7 @@ function render(){
 
 /* Punkte vergeben / entfernen */
 liste.addEventListener('click', e => {
+  if(!ADMIN) return;
   const li = e.target.closest('.zeile'); if(!li) return;
   const s = spieler.find(x => x.name === li.dataset.name); if(!s) return;
   const b = e.target.closest('.pkt');
@@ -285,20 +302,19 @@ liste.addEventListener('click', e => {
 });
 
 /* Neuen Namen hinzufügen */
-const gueltig = n => /^[A-Za-z0-9_]{3,16}$/.test(n);
+const gueltig = n => /^[\w. ]{3,17}$/.test(n);
 eingabe.addEventListener('input', () => {
   const n = eingabe.value.trim();
-  vorschau.src = gueltig(n) ? SKIN(n) : STEVE;
+  skin(vorschau, gueltig(n) ? n : 'MHF_Steve');
 });
-vorschau.onerror = () => { vorschau.src = STEVE; };
 
 function hinzufuegen(){
   const n = eingabe.value.trim();
-  if(!gueltig(n)) return toast('Name: 3–16 Zeichen, nur Buchstaben, Zahlen, _');
+  if(!gueltig(n)) return toast('Name: 3–16 Zeichen (Buchstaben, Zahlen, _ .)');
   if(spieler.some(s => s.name.toLowerCase() === n.toLowerCase())) return toast('Den Namen gibt es schon');
   spieler.push({name:n, punkte:0});
   speichern(); render();
-  eingabe.value = ''; vorschau.src = STEVE; eingabe.focus();
+  eingabe.value = ''; skin(vorschau, 'MHF_Steve'); eingabe.focus();
   const r = document.getElementById('hinzu').getBoundingClientRect();
   burst(r.left + r.width/2, r.top + r.height/2, 20);
 }
@@ -306,12 +322,17 @@ document.getElementById('hinzu').addEventListener('click', hinzufuegen);
 eingabe.addEventListener('keydown', e => { if(e.key === 'Enter') hinzufuegen(); });
 
 document.getElementById('export').addEventListener('click', async () => {
-  const code = 'const STANDARD_SPIELER = ' + JSON.stringify(spieler) + ';';
-  try{ await navigator.clipboard.writeText(code); toast('Kopiert! Ersetze die Zeile im Code.'); }
-  catch(e){ prompt('Diesen Code kopieren:', code); }
+  const code = JSON.stringify(spieler, null, 1);
+  try{ await navigator.clipboard.writeText(code); toast('Kopiert! In spieler.json einfügen.'); }
+  catch(e){ prompt('Diesen Text kopieren:', code); }
+});
+document.getElementById('reset').addEventListener('click', () => {
+  if(!confirm('Deine Änderungen verwerfen und die veröffentlichte Liste laden?')) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  location.reload();
 });
 
-render();
+laden().then(l => { spieler = l; render(); });
 </script>
 </body>
 </html>
