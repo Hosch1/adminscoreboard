@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#062b33; --panel:#0a3a44; --panel2:#0e4955;
+  --turq:#2ee6d0; --turq-d:#12a595;
+  --orange:#ff8a1f; --orange-d:#c25e00;
+  --text:#effffc; --muted:#8fc9c4;
+  --pixel:'Silkscreen','Courier New',monospace;
+  --body:'Nunito','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh; color:var(--text); font-family:var(--body); font-weight:600;
+  background:
+    linear-gradient(rgba(46,230,208,.05) 1px,transparent 1px) 0 0/32px 32px,
+    linear-gradient(90deg,rgba(46,230,208,.05) 1px,transparent 1px) 0 0/32px 32px,
+    radial-gradient(900px 500px at 85% -10%,rgba(255,138,31,.22),transparent 60%),
+    var(--bg);
+  padding:32px 16px 64px; overflow-x:hidden;
+}
+main{max-width:720px;margin:0 auto}
+h1{
+  font-family:var(--pixel); font-weight:700; font-size:clamp(34px,8vw,60px);
+  margin:0 0 6px; letter-spacing:1px; color:var(--orange);
+  text-shadow:4px 4px 0 var(--turq-d);
+}
+.sub{margin:0 0 28px;color:var(--muted)}
+
+/* Formular */
+.neu-form{
+  display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+  background:var(--panel); border:3px solid var(--turq-d); padding:14px; border-radius:6px;
+  box-shadow:6px 6px 0 rgba(0,0,0,.35); margin-bottom:28px;
+}
+.vorschau{
+  width:48px;height:48px;image-rendering:pixelated;background:var(--panel2);
+  border:3px solid var(--orange); border-radius:4px; flex:none;
+}
+.neu-form input{
+  flex:1 1 180px; min-width:0; font:inherit; font-weight:800; color:var(--text);
+  background:var(--bg); border:3px solid var(--turq-d); border-radius:4px; padding:12px 14px; outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.neu-form input:focus{border-color:var(--turq);box-shadow:0 0 0 4px rgba(46,230,208,.25)}
+.neu-form input::placeholder{color:#5e9b97}
+
+/* Knöpfe */
+.btn{
+  position:relative; overflow:hidden; cursor:pointer; user-select:none;
+  font-family:var(--pixel); font-weight:700; font-size:15px; color:#1c0f00;
+  background:var(--orange); border:0; border-radius:4px; padding:12px 18px;
+  box-shadow:0 5px 0 var(--orange-d);
+  transition:transform .12s, box-shadow .12s, filter .15s;
+}
+.btn::after{ /* Glanz-Streifen */
+  content:''; position:absolute; top:0; left:-70%; width:50%; height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-20deg); transition:left .5s;
+}
+.btn:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--orange-d);filter:brightness(1.07)}
+.btn:hover::after{left:130%}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
+.btn:focus-visible{outline:3px solid var(--turq);outline-offset:3px}
+.btn.turq{background:var(--turq);box-shadow:0 5px 0 var(--turq-d)}
+.btn.turq:hover{box-shadow:0 8px 0 var(--turq-d)}
+.btn.turq:active{box-shadow:0 1px 0 var(--turq-d)}
+.btn.klein{padding:8px 12px;font-size:14px;min-width:46px}
+.btn.geist{background:transparent;color:var(--muted);box-shadow:none;border:2px solid var(--turq-d)}
+.btn.geist:hover{color:var(--text);border-color:var(--orange);box-shadow:none}
+.ripple{
+  position:absolute; border-radius:50%; background:rgba(255,255,255,.65);
+  transform:scale(0); animation:ripple .6s ease-out forwards; pointer-events:none;
+}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+
+/* Liste */
+#liste{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.zeile{
+  display:grid; grid-template-columns:44px 64px 1fr auto; align-items:center; gap:14px;
+  background:var(--panel); border:3px solid transparent; border-radius:6px; padding:10px 14px 10px 10px;
+  box-shadow:5px 5px 0 rgba(0,0,0,.35);
+  transition:border-color .2s, background .2s;
+}
+.zeile.neu{animation:rein .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes rein{from{transform:scale(.7) rotate(-2deg);opacity:0}}
+.zeile:hover{border-color:var(--turq-d);background:var(--panel2)}
+.zeile[data-rang="1"]{border-color:var(--orange);background:linear-gradient(90deg,rgba(255,138,31,.2),var(--panel) 55%)}
+.zeile[data-rang="2"] .platz{color:var(--turq)}
+.zeile[data-rang="3"] .platz{color:var(--turq-d)}
+.platz{font-family:var(--pixel);font-weight:700;font-size:26px;text-align:center;color:var(--muted)}
+.zeile[data-rang="1"] .platz{color:var(--orange);font-size:30px}
+.skin{
+  width:64px;height:64px;image-rendering:pixelated;border-radius:4px;background:var(--bg);
+  border:3px solid var(--turq-d); transition:transform .25s cubic-bezier(.2,1.6,.4,1), border-color .2s;
+}
+.zeile:hover .skin{transform:rotate(-6deg) scale(1.12);border-color:var(--orange)}
+.skin.hupf{animation:hupf .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes hupf{40%{transform:translateY(-14px) scale(1.15)}}
+.info{min-width:0}
+.name{font-weight:800;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.punkte{
+  display:inline-block;font-family:var(--pixel);font-weight:700;font-size:26px;color:var(--turq);
+  transform-origin:left center;
+}
+.punkte.bump{animation:bump .4s cubic-bezier(.2,1.8,.4,1)}
+@keyframes bump{40%{transform:scale(1.5);color:var(--orange)}}
+.einheit{color:var(--muted);font-size:14px;margin-left:4px}
+.aktionen{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.weg{
+  background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:6px 8px;border-radius:4px;
+  transition:color .15s, transform .2s;
+}
+.weg:hover{color:var(--orange);transform:rotate(90deg) scale(1.2)}
+.weg:focus-visible{outline:3px solid var(--turq)}
+.leer{
+  text-align:center;color:var(--muted);padding:40px 16px;border:3px dashed var(--turq-d);border-radius:6px;
+}
+.fuss{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:28px;align-items:center}
+.fuss small{color:var(--muted);max-width:420px}
+
+/* Partikel & Toast */
+.partikel{position:fixed;width:10px;height:10px;pointer-events:none;z-index:50;image-rendering:pixelated}
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,120px);background:var(--turq);color:#032;
+  font-family:var(--pixel);font-weight:700;padding:12px 18px;border-radius:4px;box-shadow:0 5px 0 var(--turq-d);
+  transition:transform .35s cubic-bezier(.2,1.5,.4,1);z-index:60;max-width:90vw;text-align:center
+}
+.toast.an{transform:translate(-50%,0)}
+
+@media (max-width:560px){
+  .zeile{grid-template-columns:34px 56px 1fr;grid-template-areas:"p s i" "a a a"}
+  .platz{grid-area:p} .skin{grid-area:s;width:56px;height:56px} .info{grid-area:i} .aktionen{grid-area:a;justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Scoreboard</h1>
+  <p class="sub">Gib den Minecraft-Namen ein, verteile Punkte, und die Rangliste sortiert sich von selbst.</p>
+
+  <div class="neu-form">
+    <img id="vorschau" class="vorschau" alt="Skin-Vorschau" src="https://mc-heads.net/avatar/MHF_Steve/96">
+    <input id="eingabe" type="text" placeholder="Minecraft-Name" maxlength="16" autocomplete="off" spellcheck="false">
+    <button id="hinzu" class="btn">Hinzufügen</button>
+  </div>
+
+  <ul id="liste"></ul>
+  <div id="leer" class="leer">Noch niemand auf der Liste. Trag oben den ersten Namen ein.</div>
+
+  <div class="fuss">
+    <small>Die Liste wird in deinem Browser gespeichert. Mit „Liste kopieren“ holst du sie in den Code, damit sie für alle Besucher gilt.</small>
+    <button id="export" class="btn turq klein">Liste kopieren</button>
+  </div>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+/* Fest eingetragene Spieler (für alle Besucher sichtbar), z. B.:
+   const STANDARD_SPIELER = [{name:"Notch", punkte:10},{name:"jeb_", punkte:7}]; */
+const STANDARD_SPIELER = [];
+
+const KEY = 'scoreboard-v1';
+const SKIN = (n, g=96) => 'https://mc-heads.net/avatar/' + encodeURIComponent(n) + '/' + g;
+const STEVE = SKIN('MHF_Steve');
+const ruhig = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let spieler = laden();
+const liste = document.getElementById('liste');
+const leer = document.getElementById('leer');
+const eingabe = document.getElementById('eingabe');
+const vorschau = document.getElementById('vorschau');
+const els = new Map();
+
+function laden(){
+  try{ const r = localStorage.getItem(KEY); if(r) return JSON.parse(r); }catch(e){}
+  return STANDARD_SPIELER.map(s => ({...s}));
+}
+function speichern(){ try{ localStorage.setItem(KEY, JSON.stringify(spieler)); }catch(e){} }
+
+function toast(text){
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('an');
+  clearTimeout(toast.z); toast.z = setTimeout(() => t.classList.remove('an'), 2200);
+}
+
+/* Klick-Effekt: Pixel-Explosion in Orange und Türkis */
+function burst(x, y, n=8){
+  if(ruhig) return;
+  const farben = ['#ff8a1f','#2ee6d0','#ffb15c','#12a595'];
+  for(let i=0;i<n;i++){
+    const p = document.createElement('div');
+    p.className = 'partikel';
+    p.style.left = x-5+'px'; p.style.top = y-5+'px';
+    p.style.background = farben[i % farben.length];
+    document.body.appendChild(p);
+    const w = Math.random()*Math.PI*2, d = 40 + Math.random()*(n>8?90:50);
+    p.animate([
+      {transform:'translate(0,0) scale(1)', opacity:1},
+      {transform:`translate(${Math.cos(w)*d}px,${Math.sin(w)*d+30}px) rotate(${Math.random()*360}deg) scale(0)`, opacity:0}
+    ], {duration:600+Math.random()*300, easing:'cubic-bezier(.1,.7,.3,1)'}).onfinish = () => p.remove();
+  }
+}
+document.addEventListener('click', e => { if(!e.target.closest('.pkt')) burst(e.clientX, e.clientY, 6); });
+
+/* Welle auf Knöpfen */
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn'); if(!b || ruhig) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height)*2;
+  const w = document.createElement('span'); w.className = 'ripple';
+  w.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;
+  b.appendChild(w); setTimeout(() => w.remove(), 650);
+});
+
+function erstellen(s){
+  const li = document.createElement('li');
+  li.className = 'zeile'; li.dataset.name = s.name;
+  li.innerHTML = `
+    <div class="platz"></div>
+    <img class="skin" alt="" loading="lazy">
+    <div class="info"><div class="name"></div><span class="punkte">0</span><span class="einheit">Punkte</span></div>
+    <div class="aktionen">
+      <button class="btn turq klein pkt" data-d="-1" aria-label="Einen Punkt abziehen">−1</button>
+      <button class="btn klein pkt" data-d="1">+1</button>
+      <button class="btn klein pkt" data-d="5">+5</button>
+      <button class="weg" aria-label="Entfernen">✕</button>
+    </div>`;
+  li.querySelector('.name').textContent = s.name;
+  const img = li.querySelector('.skin');
+  img.src = SKIN(s.name);
+  img.onerror = () => { img.onerror = null; img.src = STEVE; };
+  return li;
+}
+
+function render(){
+  const sortiert = [...spieler].sort((a,b) => b.punkte - a.punkte || a.name.localeCompare(b.name));
+  const vorher = new Map();
+  els.forEach((el,n) => vorher.set(n, el.getBoundingClientRect().top));
+  els.forEach((el,n) => { if(!spieler.some(s => s.name === n)){ el.remove(); els.delete(n); } });
+  sortiert.forEach((s,i) => {
+    let el = els.get(s.name);
+    if(!el){ el = erstellen(s); el.classList.add('neu'); els.set(s.name, el); }
+    el.dataset.rang = i+1;
+    el.querySelector('.platz').textContent = i+1;
+    el.querySelector('.punkte').textContent = s.punkte;
+    liste.appendChild(el);
+  });
+  if(!ruhig) sortiert.forEach(s => {
+    const el = els.get(s.name);
+    if(!vorher.has(s.name)) return;
+    const d = vorher.get(s.name) - el.getBoundingClientRect().top;
+    if(d) el.animate([{transform:`translateY(${d}px)`},{transform:'none'}], {duration:500, easing:'cubic-bezier(.2,1.2,.3,1)'});
+  });
+  leer.hidden = spieler.length > 0;
+}
+
+/* Punkte vergeben / entfernen */
+liste.addEventListener('click', e => {
+  const li = e.target.closest('.zeile'); if(!li) return;
+  const s = spieler.find(x => x.name === li.dataset.name); if(!s) return;
+  const b = e.target.closest('.pkt');
+  if(b){
+    s.punkte += Number(b.dataset.d);
+    speichern(); render();
+    const r = b.getBoundingClientRect();
+    burst(r.left + r.width/2, r.top + r.height/2, b.dataset.d === '5' ? 22 : 14);
+    for(const sel of ['.punkte','.skin']){
+      const k = li.querySelector(sel), c = sel === '.punkte' ? 'bump' : 'hupf';
+      k.classList.remove(c); void k.offsetWidth; k.classList.add(c);
+    }
+  } else if(e.target.closest('.weg')){
+    spieler = spieler.filter(x => x !== s); speichern(); render();
+  }
+});
+
+/* Neuen Namen hinzufügen */
+const gueltig = n => /^[A-Za-z0-9_]{3,16}$/.test(n);
+eingabe.addEventListener('input', () => {
+  const n = eingabe.value.trim();
+  vorschau.src = gueltig(n) ? SKIN(n) : STEVE;
+});
+vorschau.onerror = () => { vorschau.src = STEVE; };
+
+function hinzufuegen(){
+  const n = eingabe.value.trim();
+  if(!gueltig(n)) return toast('Name: 3–16 Zeichen, nur Buchstaben, Zahlen, _');
+  if(spieler.some(s => s.name.toLowerCase() === n.toLowerCase())) return toast('Den Namen gibt es schon');
+  spieler.push({name:n, punkte:0});
+  speichern(); render();
+  eingabe.value = ''; vorschau.src = STEVE; eingabe.focus();
+  const r = document.getElementById('hinzu').getBoundingClientRect();
+  burst(r.left + r.width/2, r.top + r.height/2, 20);
+}
+document.getElementById('hinzu').addEventListener('click', hinzufuegen);
+eingabe.addEventListener('keydown', e => { if(e.key === 'Enter') hinzufuegen(); });
+
+document.getElementById('export').addEventListener('click', async () => {
+  const code = 'const STANDARD_SPIELER = ' + JSON.stringify(spieler) + ';';
+  try{ await navigator.clipboard.writeText(code); toast('Kopiert! Ersetze die Zeile im Code.'); }
+  catch(e){ prompt('Diesen Code kopieren:', code); }
+});
+
+render();
+</script>
+</body>
+</html>
